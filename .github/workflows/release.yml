@@ -15,14 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - run: echo "COMMIT_TIME=$(git show -s --format=%ci ${{ github.ref_name }})" >> $GITHUB_ENV
       - name: Create release issue
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          COMMIT_TIME: ${{ env.COMMIT_TIME }}
         with:
+          assignees: ${{github.actor}}
           filename: .github/issue-template.md
-          milestone: 1
           update_existing: true
           search_existing: all
-
-      - run: "echo Created issue number ${{ toJson(github) }}"
