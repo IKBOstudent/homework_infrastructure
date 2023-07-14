@@ -1,18 +1,43 @@
-name: CI build
+name: CI checks
 
 on:
-  workflow_dispatch:
   pull_request:
     branches: [master]
   push:
     branches: [master]
 
 concurrency:
-  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  group: "checks"
   cancel-in-progress: true
 
 jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: npm
+
+      - name: Install commitlint
+        run: |
+          npm install conventional-changelog-conventionalcommits
+          npm install commitlint@latest
+
+      - name: Validate current commit
+        if: github.event_name == 'push'
+        run: npx commitlint --from HEAD~1 --to HEAD --verbose
+
+      - name: Validate PR commit
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
   build:
+    needs: commitlint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,9 +45,6 @@ jobs:
         with:
           node-version: 18.x
           cache: npm
-
-      - name: Validate commit message
-        uses: wagoid/commitlint-github-action@v4
 
       - name: Install dependencies
         run: npm ci
