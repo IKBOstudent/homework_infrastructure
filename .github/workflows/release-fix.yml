@@ -1,4 +1,4 @@
-name: CI release
+name: CI release Hot-Fix
 
 on:
   push:
